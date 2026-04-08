@@ -37,6 +37,24 @@ class Product(Base):
     description = Column(String(500), nullable=True)
     price = Column(Integer, nullable=False)
 
+
+class Countries(Base):
+    __tablename__ = 'countries'
+
+    name = Column(String(200), primary_key=True)
+    iso_code = Column(String(200), nullable=False)
+    short_code = Column(String(200), nullable=True)
+
+# class ConsumerUnits(Base):
+#     __tablename__ = 'ConsumerUnits'
+
+#     number_of_consumers = Column(Integer, primary_key=True)
+#     coutry_name = Column(String(200), nullable=False)
+   
+
+
+
+
 # Create all tables in the database
 Base.metadata.create_all(engine)
 
@@ -54,24 +72,24 @@ def get_db():
 from pydantic import BaseModel
 from typing import Optional
 
-class ProductCreate(BaseModel):
+class CountriesCreate(BaseModel):
     name: str
-    description: Optional[str] = None
-    price: int
+    iso_code: Optional[str] = None
+    short_code: str
 
-class ProductResponse(BaseModel):
-    id: int
+class CountriesResponse(BaseModel):
     name: str
-    description: Optional[str] = None
-    price: int
+    iso_code: Optional[str] = None
+    short_code: str
 
-    class Config:
-        from_attributes = True  # Enables compatibility with SQLAlchemy models
+    # class Config:
+    #     from_attributes = True  # Enables compatibility with SQLAlchemy models
 
-class ProductUpdate(BaseModel):
+class CountriesUpdate(BaseModel):
     name: Optional[str] = None
-    description: Optional[str] = None
-    price: Optional[int] = None
+    iso_code: Optional[str] = None
+    short_code: Optional[str] = None
+
 
 
     
