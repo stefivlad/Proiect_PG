@@ -1,38 +1,78 @@
 import os
 os.environ["TESTING"] = "1"
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.exc import IntegrityError
 
-# Import the app, Base, and get_db from your project files
+# Import the app and dependency to override after TESTING is set
 from fastAPI import app
-from Proiectul import Base, get_db
+from Proiectul import get_db, Identifiers, Countries, ConsumerUnits
 
-# --- 1. CONFIGURARE BAZĂ DE DATE DE TEST (SQLite în memorie partajată) ---
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+# --- Dummy in-memory mock store for tests ---
+class DummyQuery:
+    def __init__(self, items, model, conditions=None):
+        self.items = items
+        self.model = model
+        self.conditions = conditions or []
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    def filter(self, *conditions):
+        return DummyQuery(self.items, self.model, self.conditions + list(conditions))
 
-# Create tables in the test database
-Base.metadata.create_all(bind=engine)
+    def all(self):
+        results = list(self.items[self.model.__tablename__])
+        for condition in self.conditions:
+            results = [row for row in results if self._matches(row, condition)]
+        return results
+
+    def first(self):
+        results = self.all()
+        return results[0] if results else None
+
+    def _matches(self, row, condition):
+        try:
+            column = condition.left.name
+            value = condition.right.value
+        except AttributeError:
+            return False
+        return getattr(row, column) == value
+
+class DummyDB:
+    def __init__(self):
+        self.data = {
+            "Identifiers": [],
+            "countries": [],
+            "consumerunits": [],
+        }
+
+    def query(self, model):
+        return DummyQuery(self.data, model)
+
+    def add(self, obj):
+        table = obj.__tablename__
+        if table == "Identifiers":
+            if any(item.identifier_name == obj.identifier_name for item in self.data[table]):
+                raise IntegrityError("duplicate", params=None, orig=None)
+        self.data[table].append(obj)
+
+    def commit(self):
+        pass
+
+    def refresh(self, obj):
+        pass
+
+    def close(self):
+        pass
 
 # --- 2. SUPRASCRIERE DEPENDENȚĂ (Override) ---
-# Tell the API to use the test database instead of the MSSQL server
+# Use a shared dummy DB across test requests so created data persists between API calls
+dummy_db = DummyDB()
+
 def override_get_db():
     try:
-        db = TestingSessionLocal()
-        yield db
+        yield dummy_db
     finally:
-        db.close()
+        pass
 
 app.dependency_overrides[get_db] = override_get_db
 
