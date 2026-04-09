@@ -58,6 +58,9 @@ class DummyDB:
     def commit(self):
         pass
 
+    def rollback(self):
+        pass
+
     def refresh(self, obj):
         pass
 
