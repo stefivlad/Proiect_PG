@@ -1,3 +1,7 @@
+import os
+os.environ["TESTING"] = "1"
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -9,7 +13,7 @@ from fastAPI import app
 from Proiectul import Base, get_db
 
 # --- 1. CONFIGURARE BAZĂ DE DATE DE TEST (SQLite în memorie partajată) ---
-SQLALCHEMY_DATABASE_URL = "sqlite://"
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,

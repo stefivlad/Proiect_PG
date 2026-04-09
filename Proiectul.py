@@ -1,5 +1,7 @@
+import os
 import warnings
 from sqlalchemy.exc import SAWarning
+from sqlalchemy.pool import StaticPool
 
 # Suppress SQLAlchemy warning for unrecognized SQL Server version
 warnings.filterwarnings("ignore", category=SAWarning)
@@ -12,13 +14,22 @@ from typing import Optional
 from decimal import Decimal
 
 # --- DATABASE SETUP ---
-DATABASE_URL = (
-    "mssql+pyodbc://@STEFANIAVLAD/PG_DevSchool"
-    "?driver=ODBC+Driver+17+for+SQL+Server"
-    "&trusted_connection=yes"
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "mssql+pyodbc://@STEFANIAVLAD/PG_DevSchool?driver=ODBC+Driver+17+for+SQL+Server&trusted_connection=yes",
 )
+TESTING = os.getenv("TESTING", "0") == "1"
 
-engine = create_engine(DATABASE_URL, connect_args={'server_version': '17.0'})
+if TESTING:
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+else:
+    engine = create_engine(DATABASE_URL, connect_args={'server_version': '17.0'})
+
 Base = declarative_base()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
