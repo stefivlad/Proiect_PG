@@ -2,16 +2,19 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 # Import the app, Base, and get_db from your project files
 from fastAPI import app
 from Proiectul import Base, get_db
 
-# --- 1. CONFIGURARE BAZĂ DE DATE DE TEST (SQLite în memorie) ---
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+# --- 1. CONFIGURARE BAZĂ DE DATE DE TEST (SQLite în memorie partajată) ---
+SQLALCHEMY_DATABASE_URL = "sqlite://"
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
