@@ -1,13 +1,15 @@
+import warnings
+from sqlalchemy.exc import SAWarning
+
+# Suppress SQLAlchemy warning for unrecognized SQL Server version
+warnings.filterwarnings("ignore", category=SAWarning)
+
 import pyodbc
 from sqlalchemy import create_engine, Column, Integer, String, Text, ForeignKey, DECIMAL
 from sqlalchemy.orm import sessionmaker, declarative_base
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from decimal import Decimal
-import warnings
-
-# Suppress SQLAlchemy warning for unrecognized SQL Server version
-warnings.filterwarnings("ignore", message="Unrecognized server version info")
 
 # --- DATABASE SETUP ---
 DATABASE_URL = (
@@ -16,7 +18,7 @@ DATABASE_URL = (
     "&trusted_connection=yes"
 )
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, connect_args={'server_version': '17.0'})
 Base = declarative_base()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

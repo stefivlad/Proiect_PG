@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List
 from Proiectul import (
     get_db, 
@@ -23,10 +24,14 @@ async def root():
 @app.post("/identifiers/", response_model=IdentifiersResponse)
 def create_identifier(identifier: IdentifiersCreate, db: Session = Depends(get_db)):
     db_id = Identifiers(**identifier.model_dump())
-    db.add(db_id)
-    db.commit()
-    db.refresh(db_id)
-    return db_id
+    try:
+        db.add(db_id)
+        db.commit()
+        db.refresh(db_id)
+        return db_id
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Identifier already exists")
 
 @app.get("/identifiers/", response_model=List[IdentifiersResponse])
 def read_identifiers(db: Session = Depends(get_db)):
@@ -55,10 +60,14 @@ def delete_identifier(identifier_name: str, db: Session = Depends(get_db)):
 @app.post("/countries/", response_model=CountriesResponse)
 def create_country(country: CountriesCreate, db: Session = Depends(get_db)):
     db_country = Countries(**country.model_dump())
-    db.add(db_country)
-    db.commit()
-    db.refresh(db_country)
-    return db_country
+    try:
+        db.add(db_country)
+        db.commit()
+        db.refresh(db_country)
+        return db_country
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Country already exists")
 
 @app.get("/countries/", response_model=List[CountriesResponse])
 def read_countries(db: Session = Depends(get_db)):
@@ -68,10 +77,14 @@ def read_countries(db: Session = Depends(get_db)):
 @app.post("/consumer-units/", response_model=ConsumerUnitsResponse)
 def create_consumer_unit(unit: ConsumerUnitsCreate, db: Session = Depends(get_db)):
     db_unit = ConsumerUnits(**unit.model_dump())
-    db.add(db_unit)
-    db.commit()
-    db.refresh(db_unit)
-    return db_unit
+    try:
+        db.add(db_unit)
+        db.commit()
+        db.refresh(db_unit)
+        return db_unit
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Consumer unit already exists")
 
 @app.get("/consumer-units/", response_model=List[ConsumerUnitsResponse])
 def read_consumer_units(db: Session = Depends(get_db)):
